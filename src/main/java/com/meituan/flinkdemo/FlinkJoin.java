@@ -41,72 +41,80 @@ public class FlinkJoin {
         env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
         env.setParallelism(1);
 
-        MTKafkaConsumer010 mtKafkaConsumer010Rate = new MTKafkaConsumer010(args);
+//        MTKafkaConsumer010 mtKafkaConsumer010Rate = new MTKafkaConsumer010(args);
 
-        mtKafkaConsumer010Rate.build(new DeserializationSchema() {
-            @Override
-            public Tuple3<Long,String,Integer> deserialize(byte[] bytes) throws IOException {
-                String[] res = new String(bytes).split(",");
-                Long timestamp = Long.valueOf(res[0]);
-                String dm = res[1];
-                Integer value = Integer.valueOf(res[2]);
-                return Tuple3.of(timestamp,dm,value);
-            }
-
-            @Override
-            public boolean isEndOfStream(Object o) {
-                return false;
-            }
-
-            @Override
-            public TypeInformation getProducedType() {
-                return TypeInformation.of(new TypeHint<Tuple3<Long,String,Integer>>() {
-                });
-            }
-        });
-
+//        mtKafkaConsumer010Rate.build(new DeserializationSchema() {
+//
+//        });
+//
 
         
-        MTKafkaConsumer010 mtKafkaConsumer010Order = new MTKafkaConsumer010(args);
-        mtKafkaConsumer010Order.build(new DeserializationSchema() {
-            @Override
-            public Object deserialize(byte[] bytes) throws IOException {
-                String[] res = new String(bytes).split(",");
-                if(res.length == 5){
-                    Long timestamp = Long.valueOf(res[0]);
-                    String catlog = res[1];
-                    Integer subcat = Integer.valueOf(res[2]);
-                    String dm = res[3];
-                    Integer value = Integer.valueOf(res[4]);
-                    return Tuple5.of(timestamp,catlog,subcat,dm,value);
-                }
-                else {
-                    return Tuple5.of(0,0,0,0,0);
-                }
-
-
-            }
-
-            @Override
-            public boolean isEndOfStream(Object o) {
-                return false;
-            }
-
-            @Override
-            public TypeInformation getProducedType() {
-                return TypeInformation.of(new TypeHint<Tuple5<Long,String,Integer,String,Integer>>() {
-                });
-            }
-        });
+        MTKafkaConsumer010 mtKafkaConsumer010 = new MTKafkaConsumer010(args);
+//        mtKafkaConsumer010Order.build(new DeserializationSchema() {
+//
+//        });
         DataStream<Tuple3<Long,String,Integer>> ratestream = null;
-        Map.Entry<KafkaTopic, FlinkKafkaConsumerBase> consumerEntry = mtKafkaConsumer010Rate.getConsumerByName(READ_KAFKA_TOPIC1, "xr_inf_namespace");
+        Map.Entry<KafkaTopic, FlinkKafkaConsumerBase> consumerEntry = mtKafkaConsumer010
+                .build(new DeserializationSchema() {
+                    @Override
+                    public Tuple3<Long,String,Integer> deserialize(byte[] bytes) throws IOException {
+                        String[] res = new String(bytes).split(",");
+                        Long timestamp = Long.valueOf(res[0]);
+                        String dm = res[1];
+                        Integer value = Integer.valueOf(res[2]);
+                        return Tuple3.of(timestamp,dm,value);
+                    }
+
+                    @Override
+                    public boolean isEndOfStream(Object o) {
+                        return false;
+                    }
+
+                    @Override
+                    public TypeInformation getProducedType() {
+                        return TypeInformation.of(new TypeHint<Tuple3<Long,String,Integer>>() {
+                        });
+                    }
+                })
+                .getConsumerByName(READ_KAFKA_TOPIC1, "xr_inf_namespace");
         ratestream = env.addSource(consumerEntry.getValue())
                 .setParallelism(1)
                 .uid(READ_KAFKA_TOPIC1)
                 .name(READ_KAFKA_TOPIC1);
 
         DataStream<Tuple5<Long,String,Integer,String,Integer>> orderstream = null;
-        Map.Entry<KafkaTopic, FlinkKafkaConsumerBase> consumerEntry2 = mtKafkaConsumer010Order.getConsumerByName(READ_KAFKA_TOPIC2, "xr_inf_namespace");
+        Map.Entry<KafkaTopic, FlinkKafkaConsumerBase> consumerEntry2 = mtKafkaConsumer010
+                .build(new DeserializationSchema() {
+                    @Override
+                    public Object deserialize(byte[] bytes) throws IOException {
+                        String[] res = new String(bytes).split(",");
+                        if(res.length == 5){
+                            Long timestamp = Long.valueOf(res[0]);
+                            String catlog = res[1];
+                            Integer subcat = Integer.valueOf(res[2]);
+                            String dm = res[3];
+                            Integer value = Integer.valueOf(res[4]);
+                            return Tuple5.of(timestamp,catlog,subcat,dm,value);
+                        }
+                        else {
+                            return Tuple5.of(0,0,0,0,0);
+                        }
+
+
+                    }
+
+                    @Override
+                    public boolean isEndOfStream(Object o) {
+                        return false;
+                    }
+
+                    @Override
+                    public TypeInformation getProducedType() {
+                        return TypeInformation.of(new TypeHint<Tuple5<Long,String,Integer,String,Integer>>() {
+                        });
+                    }
+                })
+                .getConsumerByName(READ_KAFKA_TOPIC2, "xr_inf_namespace");
         orderstream = env.addSource(consumerEntry2.getValue())
                 .setParallelism(1)
                 .uid(READ_KAFKA_TOPIC2)
