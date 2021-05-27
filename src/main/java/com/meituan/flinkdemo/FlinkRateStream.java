@@ -17,7 +17,7 @@ import java.util.Random;
 public class FlinkRateStream {
     public static final String[] HBDM = {"BEF","CNY","DEM","EUR","HKD","USD","ITL"};
     private static final String WRITE_KAFKA_TOPIC = "app.flinkrate";
-    private static final Logger LOG = LoggerFactory.getLogger(GenerateData.class);
+    private static final Logger LOG = LoggerFactory.getLogger(FlinkRateStream.class);
 
 
     public static void main(String[] args) throws Exception {

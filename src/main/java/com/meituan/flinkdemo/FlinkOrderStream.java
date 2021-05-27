@@ -15,7 +15,7 @@ import java.util.Map;
 import java.util.Random;
 
 public class FlinkOrderStream {
-    private static final Logger LOG = LoggerFactory.getLogger(GenerateData.class);
+    private static final Logger LOG = LoggerFactory.getLogger(FlinkOrderStream.class);
     private static final String WRITE_KAFKA_TOPIC = "app.flinkorder";
 
     public static void main(String[] args) throws Exception {
