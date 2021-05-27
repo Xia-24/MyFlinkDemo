@@ -1,3 +1,5 @@
+package com.meituan.flinkdemo;
+
 import com.alibaba.fastjson.JSON;
 import com.alibaba.otter.canal.protocol.CanalEntry;
 import com.meituan.data.binlog.BinlogEntry;

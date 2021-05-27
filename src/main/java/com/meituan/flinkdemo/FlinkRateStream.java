@@ -1,3 +1,5 @@
+package com.meituan.flinkdemo;
+
 import com.meituan.flink.common.config.JobConf;
 import com.meituan.flink.common.config.KafkaTopic;
 import com.meituan.flink.common.kafka.MTKafkaProducer010;
