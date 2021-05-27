@@ -3,6 +3,7 @@ package com.meituan.flinkdemo;
 import com.meituan.flink.common.config.JobConf;
 import com.meituan.flink.common.config.KafkaTopic;
 import com.meituan.flink.common.kafka.MTKafkaProducer010;
+import org.apache.flink.api.common.serialization.SimpleStringSchema;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.source.SourceFunction;
@@ -39,6 +40,7 @@ public class FlinkOrderStream {
         });
 //        DataStreamSink<String>
         MTKafkaProducer010 mtKafkaProducer010 = new MTKafkaProducer010(args);
+        mtKafkaProducer010.build(new SimpleStringSchema());
         Map<KafkaTopic, FlinkKafkaProducer010> topic2producers = mtKafkaProducer010.getTargetTopicsToProducers();
 
         // 添加一个Kafka Data Sink
