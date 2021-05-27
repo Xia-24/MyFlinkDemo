@@ -100,7 +100,7 @@ public class FlinkJoin {
                 .name(READ_KAFKA_TOPIC1);
 
         DataStream<Tuple5<Long,String,Integer,String,Integer>> orderstream = null;
-        Map.Entry<KafkaTopic, FlinkKafkaConsumerBase> consumerEntry2 = mtKafkaConsumer010Rate.getConsumerByName(READ_KAFKA_TOPIC2, "xr_inf_namespace");
+        Map.Entry<KafkaTopic, FlinkKafkaConsumerBase> consumerEntry2 = mtKafkaConsumer010Order.getConsumerByName(READ_KAFKA_TOPIC2, "xr_inf_namespace");
         orderstream = env.addSource(consumerEntry2.getValue())
                 .setParallelism(1)
                 .uid(READ_KAFKA_TOPIC2)
