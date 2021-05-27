@@ -31,8 +31,8 @@ import java.util.Random;
 
 public class FlinkJoin {
     private static final Logger LOG = LoggerFactory.getLogger(FlinkJoin.class);
-    private static final String READ_KAFKA_TOPIC1 = "app.flinkorder";
-    private static final String READ_KAFKA_TOPIC2 = "app.flinkrate";
+    private static final String READ_KAFKA_TOPIC2 = "app.flinkorder";
+    private static final String READ_KAFKA_TOPIC1 = "app.flinkrate";
     private static final String WRITE_KAFKA_TOPIC = "app.join";
 
 
