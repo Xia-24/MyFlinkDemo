@@ -72,12 +72,18 @@ public class FlinkJoin {
             @Override
             public Object deserialize(byte[] bytes) throws IOException {
                 String[] res = new String(bytes).split(",");
-                Long timestamp = Long.valueOf(res[0]);
-                String catlog = res[1];
-                Integer subcat = Integer.valueOf(res[2]);
-                String dm = res[3];
-                Integer value = Integer.valueOf(res[4]);
-                return Tuple5.of(timestamp,catlog,subcat,dm,value);
+                if(res.length == 5){
+                    Long timestamp = Long.valueOf(res[0]);
+                    String catlog = res[1];
+                    Integer subcat = Integer.valueOf(res[2]);
+                    String dm = res[3];
+                    Integer value = Integer.valueOf(res[4]);
+                    return Tuple5.of(timestamp,catlog,subcat,dm,value);
+                }
+                else {
+                    return Tuple5.of(0,0,0,0,0);
+                }
+
 
             }
 
