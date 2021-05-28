@@ -5,6 +5,7 @@ import com.meituan.flink.common.config.KafkaTopic;
 import com.meituan.flink.common.kafka.MTKafkaConsumer010;
 import com.meituan.flink.common.kafka.MTKafkaProducer010;
 import org.apache.flink.api.common.functions.JoinFunction;
+import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.serialization.DeserializationSchema;
 import org.apache.flink.api.common.serialization.SimpleStringSchema;
 import org.apache.flink.api.common.typeinfo.TypeHint;
@@ -31,8 +32,8 @@ import java.util.Random;
 
 public class FlinkJoin {
     private static final Logger LOG = LoggerFactory.getLogger(FlinkJoin.class);
-    private static final String READ_KAFKA_TOPIC2 = "app.flinkorder";
     private static final String READ_KAFKA_TOPIC1 = "app.flinkrate";
+    private static final String READ_KAFKA_TOPIC2 = "app.flinkorder";
     private static final String WRITE_KAFKA_TOPIC = "app.join";
 
 
@@ -41,18 +42,7 @@ public class FlinkJoin {
         env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
         env.setParallelism(1);
 
-//        MTKafkaConsumer010 mtKafkaConsumer010Rate = new MTKafkaConsumer010(args);
-
-//        mtKafkaConsumer010Rate.build(new DeserializationSchema() {
-//
-//        });
-//
-
-        
         MTKafkaConsumer010 mtKafkaConsumer010 = new MTKafkaConsumer010(args);
-//        mtKafkaConsumer010Order.build(new DeserializationSchema() {
-//
-//        });
         DataStream<Tuple3<Long,String,Integer>> ratestream = null;
         Map.Entry<KafkaTopic, FlinkKafkaConsumerBase> consumerEntry = mtKafkaConsumer010
                 .build(new DeserializationSchema() {
@@ -159,9 +149,16 @@ public class FlinkJoin {
         mtKafkaProducer010.build(new SimpleStringSchema());
         Map<KafkaTopic, FlinkKafkaProducer010> topic2producers = mtKafkaProducer010.getTargetTopicsToProducers();
 
+        DataStream<String> newstream = joinedstream.map(new MapFunction<Tuple9<Long, String, Integer, String, Integer, Long, String, Integer, Integer>, String>() {
+            @Override
+            public String map(Tuple9<Long, String, Integer, String, Integer, Long, String, Integer, Integer> longStringIntegerStringIntegerLongStringIntegerIntegerTuple9) throws Exception {
+                return longStringIntegerStringIntegerLongStringIntegerIntegerTuple9.toString();
+            }
+        });
+
         // 添加一个Kafka Data Sink
         for(Map.Entry<KafkaTopic,FlinkKafkaProducer010> entry:topic2producers.entrySet()){
-            joinedstream.addSink(entry.getValue())
+            newstream.addSink(entry.getValue())
                     .setParallelism(entry.getKey().getParallelism())
                     .uid(WRITE_KAFKA_TOPIC).name(WRITE_KAFKA_TOPIC);
         }
