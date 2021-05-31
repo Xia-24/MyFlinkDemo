@@ -24,12 +24,27 @@ public class FlinkOrderStream {
             private Random r = new Random();
             private static final long serialV = 1L;
             boolean running = true;
+            private int cnt = 0;
+            private int num = 0;
+            int hbdmindex = 0;
             @Override
             public void run(SourceContext<String> sourceContext) throws Exception {
                 while (running){
-                    Thread.sleep(r.nextInt(1500));
-                    char catlog = (char) (65 + r.nextInt(5));
-                    sourceContext.collect(String.format("%d,%s,%d,%s,%d",System.currentTimeMillis(),String.valueOf(catlog),r.nextInt(5),FlinkRateStream.HBDM[r.nextInt(FlinkRateStream.HBDM.length)],r.nextInt(1000)));
+                    Thread.sleep(100);
+                    if(cnt < 10){
+                        cnt ++;
+                        char catlog = (char) (65 + num);
+                        sourceContext.collect(String.format("%d,%s,%d,%s,%d",System.currentTimeMillis()/1000,String.valueOf(catlog),num,FlinkRateStream.HBDM[hbdmindex],num));
+
+                    }
+                    else{
+                        cnt = 0;
+                        num = (num +1)%10;
+                        hbdmindex = (hbdmindex +1 ) % 7;
+                        char catlog = (char) (65 + num);
+                        sourceContext.collect(String.format("%d,%s,%d,%s,%d",System.currentTimeMillis()/1000,String.valueOf(catlog),num,FlinkRateStream.HBDM[hbdmindex],num));
+
+                    }
                 }
             }
 
