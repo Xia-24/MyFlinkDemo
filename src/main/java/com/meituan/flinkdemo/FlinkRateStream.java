@@ -26,11 +26,24 @@ public class FlinkRateStream {
             private Random r = new Random();
             private static final long serial = 1L;
             boolean running = true;
+            int hbdmindex = 0;
+            int num = 0;
+            int cnt = 0;
             @Override
             public void run(SourceContext<String> sourceContext) throws Exception {
+
                 while(running){
-                    Thread.sleep(r.nextInt(3)*1000);
-                    sourceContext.collect(String.format("%d,%s,%d",System.currentTimeMillis(),HBDM[r.nextInt(HBDM.length)],r.nextInt(20)));
+                    Thread.sleep(100);
+                    if(cnt < 10){
+                        cnt ++;
+                        sourceContext.collect(String.format("%d,%s,%d",System.currentTimeMillis()/1000,HBDM[hbdmindex],num));
+                    }
+                    else{
+                        cnt = 0;
+                        hbdmindex = (hbdmindex + 1)%7;
+                        num = (num + 1) % 10;
+                        sourceContext.collect(String.format("%d,%s,%d",System.currentTimeMillis()/1000,HBDM[hbdmindex],num));
+                    }
                 }
             }
 
