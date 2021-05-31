@@ -36,13 +36,13 @@ public class FlinkRateStream {
                     Thread.sleep(100);
                     if(cnt < 10){
                         cnt ++;
-                        sourceContext.collect(String.format("%d,%s,%d",System.currentTimeMillis()/1000,HBDM[hbdmindex],num));
+                        sourceContext.collect(String.format("%d,%s,%d",System.currentTimeMillis(),HBDM[hbdmindex],num));
                     }
                     else{
                         cnt = 0;
                         hbdmindex = (hbdmindex + 1)%7;
                         num = (num + 1) % 10;
-                        sourceContext.collect(String.format("%d,%s,%d",System.currentTimeMillis()/1000,HBDM[hbdmindex],num));
+                        sourceContext.collect(String.format("%d,%s,%d",System.currentTimeMillis(),HBDM[hbdmindex],num));
                     }
                 }
             }

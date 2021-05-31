@@ -34,7 +34,7 @@ public class FlinkOrderStream {
                     if(cnt < 10){
                         cnt ++;
                         char catlog = (char) (65 + num);
-                        sourceContext.collect(String.format("%d,%s,%d,%s,%d",System.currentTimeMillis()/1000,String.valueOf(catlog),num,FlinkRateStream.HBDM[hbdmindex],num));
+                        sourceContext.collect(String.format("%d,%s,%d,%s,%d",System.currentTimeMillis(),String.valueOf(catlog),num,FlinkRateStream.HBDM[hbdmindex],num));
 
                     }
                     else{
@@ -42,7 +42,7 @@ public class FlinkOrderStream {
                         num = (num +1)%10;
                         hbdmindex = (hbdmindex +1 ) % 7;
                         char catlog = (char) (65 + num);
-                        sourceContext.collect(String.format("%d,%s,%d,%s,%d",System.currentTimeMillis()/1000,String.valueOf(catlog),num,FlinkRateStream.HBDM[hbdmindex],num));
+                        sourceContext.collect(String.format("%d,%s,%d,%s,%d",System.currentTimeMillis(),String.valueOf(catlog),num,FlinkRateStream.HBDM[hbdmindex],num));
 
                     }
                 }
