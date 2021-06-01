@@ -4,8 +4,6 @@ import com.meituan.flink.common.config.JobConf;
 import com.meituan.flink.common.config.KafkaTopic;
 import com.meituan.flink.common.kafka.MTKafkaConsumer010;
 import com.meituan.flink.common.kafka.MTKafkaProducer010;
-import org.apache.flink.api.common.functions.FilterFunction;
-import org.apache.flink.api.common.functions.JoinFunction;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.serialization.DeserializationSchema;
 import org.apache.flink.api.common.serialization.SimpleStringSchema;
@@ -13,7 +11,6 @@ import org.apache.flink.api.common.state.ValueState;
 import org.apache.flink.api.common.state.ValueStateDescriptor;
 import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
-import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.api.java.tuple.*;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.shaded.guava18.com.google.common.hash.Funnels;
@@ -23,10 +20,6 @@ import org.apache.flink.streaming.api.datastream.KeyedStream;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.KeyedProcessFunction;
-import org.apache.flink.streaming.api.functions.timestamps.AscendingTimestampExtractor;
-import org.apache.flink.streaming.api.functions.timestamps.BoundedOutOfOrdernessTimestampExtractor;
-import org.apache.flink.streaming.api.windowing.assigners.TumblingEventTimeWindows;
-import org.apache.flink.streaming.api.windowing.time.Time;
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumerBase;
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaProducer010;
 import org.apache.flink.util.Collector;
@@ -37,8 +30,9 @@ import org.slf4j.LoggerFactory;
 import org.apache.flink.shaded.guava18.com.google.common.hash.BloomFilter;
 
 import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
-import java.util.Random;
 
 public class FlinkJoin {
     private static final Logger LOG = LoggerFactory.getLogger(FlinkJoin.class);
@@ -126,6 +120,9 @@ public class FlinkJoin {
         SingleOutputStreamOperator<Tuple3<Long,String,Integer>> res = keyedstream.process(new KeyedProcessFunction<Tuple, Tuple3<Long, String, Integer>, Tuple3<Long, String, Integer>>() {
             //保存分组数据去重后用户ID的布隆过滤器
             private transient ValueState<BloomFilter> bloomState = null;
+            private volatile BloomFilter<String> bloomFilter;
+            private static final int BF_CARDINAL_THRESHOLD = 1000000;
+            private static final double BF_FALSE_POSITIVE_RATE = 0.01;
             //保存去重后总人数的state，加transient禁止参与反序列化
 //            private transient ValueState<Integer> timeCountState = null;
 //            //保存活动的点击数的state
@@ -143,28 +140,26 @@ public class FlinkJoin {
                 System.out.println(str);
 
 
-                BloomFilter bloomFilter = bloomState.value();
-                System.out.println("111111");
-                System.out.println(bloomFilter==null);
+                bloomFilter = bloomState.value();
+//                System.out.println("111111");
+//                System.out.println(bloomFilter==null);
 //                Integer timecount = timeCountState.value();
 //                Integer hbdmcount = clickState.value();
 
 //                System.out.println(bloomFilter.mightContain(str));
 
 
-                if(bloomFilter == null){
-                    bloomFilter = BloomFilter.create(Funnels.unencodedCharsFunnel(),10000000);
-                    bloomState.update(bloomFilter);
-                    System.out.println("2222222");
-                    System.out.println(bloomFilter.toString());;
-                    System.out.println("create filter");
-                }
+//                if(bloomFilter == null){
+//                    bloomFilter = BloomFilter.create(Funnels.unencodedCharsFunnel(),10000000);
+//                    bloomState.update(bloomFilter);
+//                    System.out.println("2222222");
+//                    System.out.println(bloomFilter.toString());;
+//                    System.out.println("create filter");
+//                }
                 System.out.println(bloomFilter.mightContain(str));
                 if(!bloomFilter.mightContain(str)){
                     bloomFilter.put(str);
-
                     collector.collect(Tuple3.of(timestamp,hbdm,num));
-
                 }
 
 //                timeCountState.update(timecount);
@@ -175,17 +170,17 @@ public class FlinkJoin {
 
             @Override
             public void open(Configuration parameters) throws Exception{
-                ValueStateDescriptor<BloomFilter> bloomDescriptor = new ValueStateDescriptor<>(
-                        "bl",
-                        TypeInformation.of(new TypeHint<BloomFilter>() {
-                        })
-                );
-//                ValueStateDescriptor<Integer> timeCountDescriptor = new ValueStateDescriptor<>(
-//                        "time-cnt",
-//                        Integer.class
-//                );
-                bloomState = getRuntimeContext().getState(bloomDescriptor);
-//                timeCountState = getRuntimeContext().getState(timeCountDescriptor);
+                long s = System.currentTimeMillis();
+                bloomFilter = BloomFilter.create(Funnels.stringFunnel(StandardCharsets.UTF_8), BF_CARDINAL_THRESHOLD, BF_FALSE_POSITIVE_RATE);
+                long e = System.currentTimeMillis();
+                System.out.println( "Created Guava BloomFilter, time cost: " + (e - s));
+            }
+            @Override
+            public void onTimer(long timestamp, KeyedProcessFunction<Tuple, Tuple3<Long, String, Integer>, Tuple3<Long, String, Integer>>.OnTimerContext ctx, Collector<Tuple3<Long, String, Integer>> out) throws Exception {
+                long s = System.currentTimeMillis();
+                bloomFilter = BloomFilter.create(Funnels.stringFunnel(StandardCharsets.UTF_8), BF_CARDINAL_THRESHOLD, BF_FALSE_POSITIVE_RATE);
+                long e = System.currentTimeMillis();
+                System.out.println("Timer triggered & resetted Guava BloomFilter, time cost: " + (e - s));
             }
         });
 
