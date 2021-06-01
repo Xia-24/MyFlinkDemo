@@ -119,7 +119,7 @@ public class FlinkJoin {
 
         SingleOutputStreamOperator<Tuple3<Long,String,Integer>> res = keyedstream.process(new KeyedProcessFunction<Tuple, Tuple3<Long, String, Integer>, Tuple3<Long, String, Integer>>() {
             //保存分组数据去重后用户ID的布隆过滤器
-            private transient ValueState<BloomFilter> bloomState = null;
+//            private transient ValueState<BloomFilter> bloomState = null;
             private volatile BloomFilter<String> bloomFilter;
             private static final int BF_CARDINAL_THRESHOLD = 1000000;
             private static final double BF_FALSE_POSITIVE_RATE = 0.01;
@@ -140,7 +140,7 @@ public class FlinkJoin {
                 System.out.println(str);
 
 
-                bloomFilter = bloomState.value();
+//                bloomFilter = bloomState.value();
 //                System.out.println("111111");
 //                System.out.println(bloomFilter==null);
 //                Integer timecount = timeCountState.value();
