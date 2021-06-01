@@ -127,7 +127,7 @@ public class FlinkJoin {
             //保存分组数据去重后用户ID的布隆过滤器
             private transient ValueState<BloomFilter> bloomState = null;
             //保存去重后总人数的state，加transient禁止参与反序列化
-            private transient ValueState<Integer> timeCountState = null;
+//            private transient ValueState<Integer> timeCountState = null;
 //            //保存活动的点击数的state
 //            private transient ValueState<Integer> clickState = null;
 
@@ -144,7 +144,7 @@ public class FlinkJoin {
 
 
                 BloomFilter bloomFilter = bloomState.value();
-                Integer timecount = timeCountState.value();
+//                Integer timecount = timeCountState.value();
 //                Integer hbdmcount = clickState.value();
 
 //                System.out.println(bloomFilter.mightContain(str));
@@ -152,12 +152,13 @@ public class FlinkJoin {
 
                 if(bloomFilter == null){
                     bloomFilter = BloomFilter.create(Funnels.unencodedCharsFunnel(),10000000);
+                    bloomState.update(bloomFilter);
                     System.out.println("create filter");
                 }
                 System.out.println(bloomFilter.mightContain(str));
                 if(!bloomFilter.mightContain(str)){
                     bloomFilter.put(str);
-                    bloomState.update(bloomFilter);
+
                     collector.collect(Tuple3.of(timestamp,hbdm,num));
 
                 }
@@ -175,12 +176,12 @@ public class FlinkJoin {
                         TypeInformation.of(new TypeHint<BloomFilter>() {
                         })
                 );
-                ValueStateDescriptor<Integer> timeCountDescriptor = new ValueStateDescriptor<>(
-                        "time-cnt",
-                        Integer.class
-                );
+//                ValueStateDescriptor<Integer> timeCountDescriptor = new ValueStateDescriptor<>(
+//                        "time-cnt",
+//                        Integer.class
+//                );
                 bloomState = getRuntimeContext().getState(bloomDescriptor);
-                timeCountState = getRuntimeContext().getState(timeCountDescriptor);
+//                timeCountState = getRuntimeContext().getState(timeCountDescriptor);
             }
         });
 
