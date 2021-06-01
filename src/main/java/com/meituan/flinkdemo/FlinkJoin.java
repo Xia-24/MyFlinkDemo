@@ -143,7 +143,7 @@ public class FlinkJoin {
                 Integer timecount = timeCountState.value();
 //                Integer hbdmcount = clickState.value();
 
-                System.out.println(bloomFilter.mightContain(str));
+//                System.out.println(bloomFilter.mightContain(str));
 
 
                 if(bloomFilter == null){
