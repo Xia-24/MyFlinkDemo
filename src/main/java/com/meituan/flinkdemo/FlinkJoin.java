@@ -153,7 +153,7 @@ public class FlinkJoin {
                 }
                 if(!bloomFilter.mightContain(str)){
                     bloomFilter.put(str);
-                    collector.collect(Tuple3.of(timestamp,hbdm,num));
+                    collector.collect(Tuple3.of(timestamp,hbdm.toString(),num));
 
                 }
                 bloomState.update(bloomFilter);
