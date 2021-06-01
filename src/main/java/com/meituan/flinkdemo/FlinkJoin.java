@@ -133,7 +133,9 @@ public class FlinkJoin {
             @Override
             public void processElement(Tuple3<Long, String, Integer> input, Context context, Collector<Tuple3<Long, String, Integer>> collector) throws Exception {
                 Long timestamp = input.f0;
+                System.out.println(timestamp.toString());
                 String hbdm = input.f1;
+                System.out.println(hbdm.toString());
                 Integer num = input.f2;
                 String str = Long.toString(timestamp/1000) + hbdm;
                 System.out.println(str);
