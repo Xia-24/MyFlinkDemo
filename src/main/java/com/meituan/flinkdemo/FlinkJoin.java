@@ -144,6 +144,8 @@ public class FlinkJoin {
 
 
                 BloomFilter bloomFilter = bloomState.value();
+                System.out.println("111111");
+                System.out.println(bloomFilter.toString());
 //                Integer timecount = timeCountState.value();
 //                Integer hbdmcount = clickState.value();
 
@@ -153,6 +155,8 @@ public class FlinkJoin {
                 if(bloomFilter == null){
                     bloomFilter = BloomFilter.create(Funnels.unencodedCharsFunnel(),10000000);
                     bloomState.update(bloomFilter);
+                    System.out.println("2222222");
+                    System.out.println(bloomFilter.toString());;
                     System.out.println("create filter");
                 }
                 System.out.println(bloomFilter.mightContain(str));
