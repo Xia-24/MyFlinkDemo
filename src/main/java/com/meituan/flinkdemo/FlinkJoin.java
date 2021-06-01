@@ -135,9 +135,9 @@ public class FlinkJoin {
             public void processElement(Tuple3<Long, String, Integer> input, Context context, Collector<Tuple3<Long, String, Integer>> collector) throws Exception {
                 System.out.println(" in  process");
                 Long timestamp = input.f0;
-                System.out.println(timestamp.toString());
+//                System.out.println(timestamp.toString());
                 String hbdm = input.f1;
-                System.out.println(hbdm.toString());
+//                System.out.println(hbdm.toString());
                 Integer num = input.f2;
                 String str = Long.toString(timestamp/1000) + hbdm;
                 System.out.println(str);
@@ -153,6 +153,7 @@ public class FlinkJoin {
                 if(bloomFilter == null){
                     bloomFilter = BloomFilter.create(Funnels.unencodedCharsFunnel(),10000000);
                 }
+                System.out.println(bloomFilter.mightContain(str));
                 if(!bloomFilter.mightContain(str)){
                     bloomFilter.put(str);
                     collector.collect(Tuple3.of(timestamp,hbdm,num));
