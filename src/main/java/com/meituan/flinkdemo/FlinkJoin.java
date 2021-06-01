@@ -156,6 +156,21 @@ public class FlinkJoin {
 
 
             }
+
+            @Override
+            public void open(Configuration parameters) throws Exception{
+                ValueStateDescriptor<BloomFilter> bloomDescriptor = new ValueStateDescriptor<>(
+                        "bl",
+                        TypeInformation.of(new TypeHint<BloomFilter>() {
+                        })
+                );
+                ValueStateDescriptor<Integer> timeCountDescriptor = new ValueStateDescriptor<>(
+                        "time-cnt",
+                        Integer.class
+                );
+                bloomState = getRuntimeContext().getState(bloomDescriptor);
+                timeCountState = getRuntimeContext().getState(timeCountDescriptor);
+            }
         });
 
         MTKafkaProducer010 mtKafkaProducer010 = new MTKafkaProducer010(args);
