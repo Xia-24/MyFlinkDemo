@@ -1,3 +1,5 @@
+package com.meituan.flinkdemo;
+
 //
 //StreamExecutionEnvironment env = StreamContextEnvironment.getExecutionEnvironment();
 //
@@ -16,3 +18,13 @@
 //
 //
 //    env.execute();
+public class xxx{
+    public static void main(String[] args) {
+        Long l = 1622513218014L;
+        Long l1 = l / 1000;
+        Long l2 = 1622513218515L;
+        Long l3 = l2 / 1000;
+        System.out.println(l1);
+        System.out.println(l3);
+    }
+}

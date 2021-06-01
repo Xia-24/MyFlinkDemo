@@ -136,11 +136,15 @@ public class FlinkJoin {
                 String hbdm = input.f1;
                 Integer num = input.f2;
                 String str = Long.toString(timestamp/1000) + hbdm;
+                System.out.println(str);
 
 
                 BloomFilter bloomFilter = bloomState.value();
                 Integer timecount = timeCountState.value();
 //                Integer hbdmcount = clickState.value();
+
+                System.out.println(bloomFilter.mightContain(str));
+
 
                 if(bloomFilter == null){
                     bloomFilter = BloomFilter.create(Funnels.unencodedCharsFunnel(),10000000);
