@@ -135,7 +135,7 @@ public class FlinkJoin {
                 Long timestamp = input.f0;
                 String hbdm = input.f1;
                 Integer num = input.f2;
-                Tuple2<Long,String> tupl2 = Tuple2.of(timestamp/1000,hbdm);
+                String str = Long.toString(timestamp) + hbdm;
 
 
                 BloomFilter bloomFilter = bloomState.value();
@@ -146,8 +146,8 @@ public class FlinkJoin {
                     bloomFilter = BloomFilter.create(Funnels.unencodedCharsFunnel(),10000000);
                     timecount = 0;
                 }
-                if(!bloomFilter.mightContain(tupl2)){
-                    bloomFilter.put(tupl2);
+                if(!bloomFilter.mightContain(str)){
+                    bloomFilter.put(str);
                     timecount += 1;
                 }
                 bloomState.update(bloomFilter);
