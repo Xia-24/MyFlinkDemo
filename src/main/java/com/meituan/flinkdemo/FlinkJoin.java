@@ -135,7 +135,7 @@ public class FlinkJoin {
                 Long timestamp = input.f0;
                 String hbdm = input.f1;
                 Integer num = input.f2;
-                String str = Long.toString(timestamp) + hbdm;
+                String str = Long.toString(timestamp/1000) + hbdm;
 
 
                 BloomFilter bloomFilter = bloomState.value();
