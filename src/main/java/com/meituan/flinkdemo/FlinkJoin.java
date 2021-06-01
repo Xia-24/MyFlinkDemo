@@ -190,7 +190,7 @@ public class FlinkJoin {
 
         // 添加一个Kafka Data Sink
         for(Map.Entry<KafkaTopic,FlinkKafkaProducer010> entry:topic2producers.entrySet()){
-            newstream.addSink(entry.getValue())
+            res.addSink(entry.getValue())
                     .setParallelism(entry.getKey().getParallelism())
                     .uid(WRITE_KAFKA_TOPIC).name(WRITE_KAFKA_TOPIC);
         }
