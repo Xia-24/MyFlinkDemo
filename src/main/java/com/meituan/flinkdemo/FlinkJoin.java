@@ -163,7 +163,7 @@ public class FlinkJoin {
 
                 }
 
-                timeCountState.update(timecount);
+//                timeCountState.update(timecount);
 
 
 
