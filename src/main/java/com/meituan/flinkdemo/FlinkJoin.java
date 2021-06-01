@@ -148,15 +148,15 @@ public class FlinkJoin {
 
                 if(bloomFilter == null){
                     bloomFilter = BloomFilter.create(Funnels.unencodedCharsFunnel(),10000000);
-                    timecount = 0;
                 }
                 if(!bloomFilter.mightContain(str)){
                     bloomFilter.put(str);
-                    timecount += 1;
+                    collector.collect(Tuple3.of(timestamp,hbdm,num));
+
                 }
                 bloomState.update(bloomFilter);
                 timeCountState.update(timecount);
-                collector.collect(Tuple3.of(timestamp,hbdm,num));
+
 
 
             }
