@@ -153,7 +153,7 @@ public class FlinkJoin {
                 }
                 if(!bloomFilter.mightContain(str)){
                     bloomFilter.put(str);
-                    collector.collect(Tuple3.of(timestamp,hbdm.toString(),num));
+                    collector.collect(Tuple3.of(timestamp,hbdm,num));
 
                 }
                 bloomState.update(bloomFilter);
@@ -192,7 +192,7 @@ public class FlinkJoin {
 
         // 添加一个Kafka Data Sink
         for(Map.Entry<KafkaTopic,FlinkKafkaProducer010> entry:topic2producers.entrySet()){
-            res.addSink(entry.getValue())
+            newstream.addSink(entry.getValue())
                     .setParallelism(entry.getKey().getParallelism())
                     .uid(WRITE_KAFKA_TOPIC).name(WRITE_KAFKA_TOPIC);
         }
