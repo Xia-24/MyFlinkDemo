@@ -156,10 +156,11 @@ public class FlinkJoin {
                 System.out.println(bloomFilter.mightContain(str));
                 if(!bloomFilter.mightContain(str)){
                     bloomFilter.put(str);
+                    bloomState.update(bloomFilter);
                     collector.collect(Tuple3.of(timestamp,hbdm,num));
 
                 }
-                bloomState.update(bloomFilter);
+
                 timeCountState.update(timecount);
 
 
