@@ -152,6 +152,7 @@ public class FlinkJoin {
 
                 if(bloomFilter == null){
                     bloomFilter = BloomFilter.create(Funnels.unencodedCharsFunnel(),10000000);
+                    System.out.println("create filter");
                 }
                 System.out.println(bloomFilter.mightContain(str));
                 if(!bloomFilter.mightContain(str)){
