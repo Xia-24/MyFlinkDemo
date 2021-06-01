@@ -58,6 +58,7 @@ public class FlinkJoin {
                 .build(new DeserializationSchema() {
                     @Override
                     public Tuple3<Long,String,Integer> deserialize(byte[] bytes) throws IOException {
+                        System.out.println(" test sout --------");
                         String[] res = new String(bytes).split(",");
                         Long timestamp = Long.valueOf(res[0]);
                         String dm = res[1];
@@ -132,6 +133,7 @@ public class FlinkJoin {
 
             @Override
             public void processElement(Tuple3<Long, String, Integer> input, Context context, Collector<Tuple3<Long, String, Integer>> collector) throws Exception {
+                System.out.println(" in  process");
                 Long timestamp = input.f0;
                 System.out.println(timestamp.toString());
                 String hbdm = input.f1;
