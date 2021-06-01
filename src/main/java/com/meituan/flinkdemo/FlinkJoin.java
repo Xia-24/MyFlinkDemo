@@ -44,7 +44,7 @@ public class FlinkJoin {
     public static void main(String[] args) throws Exception {
         final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
         env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
-        env.setParallelism(1);
+        env.setParallelism(10);
 
         MTKafkaConsumer010 mtKafkaConsumer010 = new MTKafkaConsumer010(args);
         DataStream<Tuple3<Long,String,Integer>> ratestream = null;
@@ -73,7 +73,7 @@ public class FlinkJoin {
                 })
                 .getConsumerByName(READ_KAFKA_TOPIC1, "xr_inf_namespace");
         ratestream = env.addSource(consumerEntry.getValue())
-                .setParallelism(1)
+                .setParallelism(10)
                 .uid(READ_KAFKA_TOPIC1)
                 .name(READ_KAFKA_TOPIC1);
 
@@ -182,7 +182,8 @@ public class FlinkJoin {
                 long e = System.currentTimeMillis();
                 System.out.println("Timer triggered & resetted Guava BloomFilter, time cost: " + (e - s));
             }
-        });
+        })
+                .setParallelism(10);
 
         MTKafkaProducer010 mtKafkaProducer010 = new MTKafkaProducer010(args);
         mtKafkaProducer010.build(new SimpleStringSchema());
