@@ -85,7 +85,8 @@ public class FlinkJoin {
         ratestream = env.addSource(consumerEntry.getValue())
                 .setParallelism(10)
                 .uid(READ_KAFKA_TOPIC1)
-                .name(READ_KAFKA_TOPIC1);
+                .name(READ_KAFKA_TOPIC1)
+                .keyBy(1,2);
 
 //        DataStream<Tuple5<Long,String,Integer,String,Integer>> orderstream = null;
 //        Map.Entry<KafkaTopic, FlinkKafkaConsumerBase> consumerEntry2 = mtKafkaConsumer010
