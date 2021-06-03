@@ -83,6 +83,12 @@ public class FlinkJoin {
                 })
                 .getConsumerByName(READ_KAFKA_TOPIC1, "xr_inf_namespace");
         ratestream = env.addSource(consumerEntry.getValue())
+                .assignTimestampsAndWatermarks(new BoundedOutOfOrdernessTimestampExtractor<Tuple3<Long, String, Integer>>(Time.milliseconds(delay)) {
+                    @Override
+                    public long extractTimestamp(Tuple3<Long, String, Integer> element) {
+                        return element.getField(0);
+                    }
+                })
                 .setParallelism(10)
                 .uid(READ_KAFKA_TOPIC1)
                 .name(READ_KAFKA_TOPIC1)
