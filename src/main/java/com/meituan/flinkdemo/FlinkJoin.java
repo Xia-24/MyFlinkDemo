@@ -194,7 +194,8 @@ public class FlinkJoin {
                             }
                         }
                     }
-                });
+                })
+                .setParallelism(10);
 
 //        KeyedStream<Tuple3<Long,String,Integer>, Tuple> keyedstream = ratestream.keyBy(0,1);
 
@@ -278,7 +279,8 @@ public class FlinkJoin {
         for(Map.Entry<KafkaTopic,FlinkKafkaProducer010> entry:topic2producers.entrySet()){
             newstream.addSink(entry.getValue())
                     .setParallelism(entry.getKey().getParallelism())
-                    .uid(WRITE_KAFKA_TOPIC).name(WRITE_KAFKA_TOPIC);
+                    .uid(WRITE_KAFKA_TOPIC).name(WRITE_KAFKA_TOPIC)
+            .setParallelism(10);
         }
 
         env.execute((new JobConf(args)).getJobName());
