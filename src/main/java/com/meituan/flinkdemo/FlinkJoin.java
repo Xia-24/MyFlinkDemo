@@ -15,11 +15,16 @@ import org.apache.flink.api.java.tuple.*;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.shaded.guava18.com.google.common.hash.Funnels;
 import org.apache.flink.streaming.api.TimeCharacteristic;
-import org.apache.flink.streaming.api.datastream.DataStream;
-import org.apache.flink.streaming.api.datastream.KeyedStream;
-import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
+import org.apache.flink.streaming.api.datastream.*;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.KeyedProcessFunction;
+import org.apache.flink.streaming.api.functions.timestamps.BoundedOutOfOrdernessTimestampExtractor;
+import org.apache.flink.streaming.api.functions.windowing.ProcessAllWindowFunction;
+import org.apache.flink.streaming.api.windowing.assigners.TumblingEventTimeWindows;
+import org.apache.flink.streaming.api.windowing.time.Time;
+import org.apache.flink.streaming.api.windowing.triggers.Trigger;
+import org.apache.flink.streaming.api.windowing.triggers.TriggerResult;
+import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumerBase;
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaProducer010;
 import org.apache.flink.util.Collector;
@@ -32,7 +37,10 @@ import org.apache.flink.shaded.guava18.com.google.common.hash.BloomFilter;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 public class FlinkJoin {
     private static final Logger LOG = LoggerFactory.getLogger(FlinkJoin.class);
@@ -110,34 +118,98 @@ public class FlinkJoin {
                     }
                 })
                 .getConsumerByName(READ_KAFKA_TOPIC2, "xr_inf_namespace");
-        orderstream = env.addSource(consumerEntry2.getValue())
-                .setParallelism(1)
-                .uid(READ_KAFKA_TOPIC2)
-                .name(READ_KAFKA_TOPIC2);
 
-        KeyedStream<Tuple3<Long,String,Integer>, Tuple> keyedstream = ratestream.keyBy(0,1);
 
-        SingleOutputStreamOperator<Tuple3<Long,String,Integer>> res = keyedstream.process(new KeyedProcessFunction<Tuple, Tuple3<Long, String, Integer>, Tuple3<Long, String, Integer>>() {
-            //保存分组数据去重后用户ID的布隆过滤器
-//            private transient ValueState<BloomFilter> bloomState = null;
-            private volatile BloomFilter<String> bloomFilter;
-            private static final int BF_CARDINAL_THRESHOLD = 1000000;
-            private static final double BF_FALSE_POSITIVE_RATE = 0.01;
-            //保存去重后总人数的state，加transient禁止参与反序列化
-//            private transient ValueState<Integer> timeCountState = null;
-//            //保存活动的点击数的state
-//            private transient ValueState<Integer> clickState = null;
+//        orderstream = env.addSource(consumerEntry2.getValue())
+//                .setParallelism(1)
+//                .uid(READ_KAFKA_TOPIC2)
+//                .name(READ_KAFKA_TOPIC2);
 
-            @Override
-            public void processElement(Tuple3<Long, String, Integer> input, Context context, Collector<Tuple3<Long, String, Integer>> collector) throws Exception {
-                System.out.println(" in  process");
-                Long timestamp = input.f0;
-//                System.out.println(timestamp.toString());
-                String hbdm = input.f1;
-//                System.out.println(hbdm.toString());
-                Integer num = input.f2;
-                String str = Long.toString(timestamp/1000) + hbdm;
-                System.out.println(str);
+        Long delay = 1000L;
+
+        ratestream = env.addSource(consumerEntry2.getValue())
+                .assignTimestampsAndWatermarks(new BoundedOutOfOrdernessTimestampExtractor<Tuple3<Long, String, Integer>>(Time.milliseconds(delay)) {
+                    @Override
+                    public long extractTimestamp(Tuple3<Long, String, Integer> element) {
+                        return element.getField(0);
+                    }
+                })
+                .keyBy(1);
+
+        AllWindowedStream<Tuple3<Long, String, Integer>, TimeWindow> windows = ratestream.windowAll(TumblingEventTimeWindows.of(Time.seconds(30)));
+
+        SingleOutputStreamOperator<Tuple3<Long, String, Integer>>processDS = windows
+                .trigger(new Trigger<Tuple3<Long, String, Integer>, TimeWindow>() {
+                    @Override
+                    public TriggerResult onElement(Tuple3<Long, String, Integer> element, long timestamp, TimeWindow window, TriggerContext ctx) throws Exception {
+                        return TriggerResult.CONTINUE;
+                    }
+
+                    @Override
+                    public TriggerResult onProcessingTime(long time, TimeWindow window, TriggerContext ctx) throws Exception {
+                        return TriggerResult.CONTINUE;
+                    }
+
+                    @Override
+                    public TriggerResult onEventTime(long time, TimeWindow window, TriggerContext ctx) throws Exception {
+                        return TriggerResult.FIRE_AND_PURGE;
+                    }
+
+                    @Override
+                    public void clear(TimeWindow window, TriggerContext ctx) throws Exception {
+
+                    }
+                })
+                .process(new ProcessAllWindowFunction<Tuple3<Long, String, Integer>, Tuple3<Long, String, Integer>, TimeWindow>() {
+                    private Set<String> set;
+
+                    @Override
+                    public void open(Configuration parameters) throws Exception {
+                        set = new CopyOnWriteArraySet<>();
+                        System.out.println("creat set");
+                    }
+
+                    @Override
+                    public void process(Context context, Iterable<Tuple3<Long, String, Integer>> elements, Collector<Tuple3<Long, String, Integer>> out) throws Exception {
+                        Iterator<Tuple3<Long, String, Integer>> iterator = elements.iterator();
+                        while(iterator.hasNext()){
+                            Tuple3<Long, String, Integer> tp3 = iterator.next();
+                            Long time = tp3.f0;
+                            String hbdm = tp3.f1;
+                            Integer num = tp3.f2;
+
+                            String str = Long.toString(time/1000) + hbdm;
+                            if(!set.contains(str)){
+                                set.add(str);
+                                out.collect(tp3);
+                            }
+                        }
+                    }
+                });
+
+//        KeyedStream<Tuple3<Long,String,Integer>, Tuple> keyedstream = ratestream.keyBy(0,1);
+
+//        SingleOutputStreamOperator<Tuple3<Long,String,Integer>> res = keyedstream.process(new KeyedProcessFunction<Tuple, Tuple3<Long, String, Integer>, Tuple3<Long, String, Integer>>() {
+//            //保存分组数据去重后用户ID的布隆过滤器
+////            private transient ValueState<BloomFilter> bloomState = null;
+//            private volatile BloomFilter<String> bloomFilter;
+//            private static final int BF_CARDINAL_THRESHOLD = 1000000;
+//            private static final double BF_FALSE_POSITIVE_RATE = 0.01;
+//            //保存去重后总人数的state，加transient禁止参与反序列化
+////            private transient ValueState<Integer> timeCountState = null;
+////            //保存活动的点击数的state
+////            private transient ValueState<Integer> clickState = null;
+//
+//            @Override
+//            public void processElement(Tuple3<Long, String, Integer> input, Context context, Collector<Tuple3<Long, String, Integer>> collector) throws Exception {
+//                System.out.println(" in  process");
+//                Long timestamp = input.f0;
+////                System.out.println(timestamp.toString());
+//                String hbdm = input.f1;
+////                System.out.println(hbdm.toString());
+//                Integer num = input.f2;
+//                String str = Long.toString(timestamp/1000) + hbdm;
+//                System.out.println(str);
 
 
 //                bloomFilter = bloomState.value();
@@ -156,40 +228,37 @@ public class FlinkJoin {
 //                    System.out.println(bloomFilter.toString());;
 //                    System.out.println("create filter");
 //                }
-                System.out.println(bloomFilter.mightContain(str));
-                if(!bloomFilter.mightContain(str)){
-                    bloomFilter.put(str);
-                    collector.collect(Tuple3.of(timestamp,hbdm,num));
-                }
+//                System.out.println(bloomFilter.mightContain(str));
+//                if(!bloomFilter.mightContain(str)){
+//                    bloomFilter.put(str);
+//                    collector.collect(Tuple3.of(timestamp,hbdm,num));
+//                }
 
 //                timeCountState.update(timecount);
-
-
-
-            }
-
-            @Override
-            public void open(Configuration parameters) throws Exception{
-                long s = System.currentTimeMillis();
-                bloomFilter = BloomFilter.create(Funnels.stringFunnel(StandardCharsets.UTF_8), BF_CARDINAL_THRESHOLD, BF_FALSE_POSITIVE_RATE);
-                long e = System.currentTimeMillis();
-                System.out.println( "Created Guava BloomFilter, time cost: " + (e - s));
-            }
-            @Override
-            public void onTimer(long timestamp, KeyedProcessFunction<Tuple, Tuple3<Long, String, Integer>, Tuple3<Long, String, Integer>>.OnTimerContext ctx, Collector<Tuple3<Long, String, Integer>> out) throws Exception {
-                long s = System.currentTimeMillis();
-                bloomFilter = BloomFilter.create(Funnels.stringFunnel(StandardCharsets.UTF_8), BF_CARDINAL_THRESHOLD, BF_FALSE_POSITIVE_RATE);
-                long e = System.currentTimeMillis();
-                System.out.println("Timer triggered & resetted Guava BloomFilter, time cost: " + (e - s));
-            }
-        })
-                .setParallelism(10);
+//            }
+//
+//            @Override
+//            public void open(Configuration parameters) throws Exception{
+//                long s = System.currentTimeMillis();
+//                bloomFilter = BloomFilter.create(Funnels.stringFunnel(StandardCharsets.UTF_8), BF_CARDINAL_THRESHOLD, BF_FALSE_POSITIVE_RATE);
+//                long e = System.currentTimeMillis();
+//                System.out.println( "Created Guava BloomFilter, time cost: " + (e - s));
+//            }
+//            @Override
+//            public void onTimer(long timestamp, KeyedProcessFunction<Tuple, Tuple3<Long, String, Integer>, Tuple3<Long, String, Integer>>.OnTimerContext ctx, Collector<Tuple3<Long, String, Integer>> out) throws Exception {
+//                long s = System.currentTimeMillis();
+//                bloomFilter = BloomFilter.create(Funnels.stringFunnel(StandardCharsets.UTF_8), BF_CARDINAL_THRESHOLD, BF_FALSE_POSITIVE_RATE);
+//                long e = System.currentTimeMillis();
+//                System.out.println("Timer triggered & resetted Guava BloomFilter, time cost: " + (e - s));
+//            }
+//        })
+//                .setParallelism(10);
 
         MTKafkaProducer010 mtKafkaProducer010 = new MTKafkaProducer010(args);
         mtKafkaProducer010.build(new SimpleStringSchema());
         Map<KafkaTopic, FlinkKafkaProducer010> topic2producers = mtKafkaProducer010.getTargetTopicsToProducers();
 
-        DataStream<String> newstream = res.map(new MapFunction<Tuple3<Long, String, Integer>, String>() {
+        DataStream<String> newstream = processDS.map(new MapFunction<Tuple3<Long, String, Integer>, String>() {
             @Override
             public String map(Tuple3<Long, String, Integer> tp3) throws Exception {
                 return tp3.toString();
