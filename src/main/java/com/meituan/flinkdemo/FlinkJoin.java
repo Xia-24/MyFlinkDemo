@@ -54,6 +54,8 @@ public class FlinkJoin {
         env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
         env.setParallelism(10);
 
+        Long delay = 1000L;
+
         MTKafkaConsumer010 mtKafkaConsumer010 = new MTKafkaConsumer010(args);
         DataStream<Tuple3<Long,String,Integer>> ratestream = null;
         Map.Entry<KafkaTopic, FlinkKafkaConsumerBase> consumerEntry = mtKafkaConsumer010
@@ -85,39 +87,39 @@ public class FlinkJoin {
                 .uid(READ_KAFKA_TOPIC1)
                 .name(READ_KAFKA_TOPIC1);
 
-        DataStream<Tuple5<Long,String,Integer,String,Integer>> orderstream = null;
-        Map.Entry<KafkaTopic, FlinkKafkaConsumerBase> consumerEntry2 = mtKafkaConsumer010
-                .build(new DeserializationSchema() {
-                    @Override
-                    public Object deserialize(byte[] bytes) throws IOException {
-                        String[] res = new String(bytes).split(",");
-                        if(res.length == 5){
-                            Long timestamp = Long.valueOf(res[0]);
-                            String catlog = res[1];
-                            Integer subcat = Integer.valueOf(res[2]);
-                            String dm = res[3];
-                            Integer value = Integer.valueOf(res[4]);
-                            return Tuple5.of(timestamp,catlog,subcat,dm,value);
-                        }
-                        else {
-                            return Tuple5.of(0,0,0,0,0);
-                        }
-
-
-                    }
-
-                    @Override
-                    public boolean isEndOfStream(Object o) {
-                        return false;
-                    }
-
-                    @Override
-                    public TypeInformation getProducedType() {
-                        return TypeInformation.of(new TypeHint<Tuple5<Long,String,Integer,String,Integer>>() {
-                        });
-                    }
-                })
-                .getConsumerByName(READ_KAFKA_TOPIC2, "xr_inf_namespace");
+//        DataStream<Tuple5<Long,String,Integer,String,Integer>> orderstream = null;
+//        Map.Entry<KafkaTopic, FlinkKafkaConsumerBase> consumerEntry2 = mtKafkaConsumer010
+//                .build(new DeserializationSchema() {
+//                    @Override
+//                    public Object deserialize(byte[] bytes) throws IOException {
+//                        String[] res = new String(bytes).split(",");
+//                        if(res.length == 5){
+//                            Long timestamp = Long.valueOf(res[0]);
+//                            String catlog = res[1];
+//                            Integer subcat = Integer.valueOf(res[2]);
+//                            String dm = res[3];
+//                            Integer value = Integer.valueOf(res[4]);
+//                            return Tuple5.of(timestamp,catlog,subcat,dm,value);
+//                        }
+//                        else {
+//                            return Tuple5.of(0,0,0,0,0);
+//                        }
+//
+//
+//                    }
+//
+//                    @Override
+//                    public boolean isEndOfStream(Object o) {
+//                        return false;
+//                    }
+//
+//                    @Override
+//                    public TypeInformation getProducedType() {
+//                        return TypeInformation.of(new TypeHint<Tuple5<Long,String,Integer,String,Integer>>() {
+//                        });
+//                    }
+//                })
+//                .getConsumerByName(READ_KAFKA_TOPIC2, "xr_inf_namespace");
 
 
 //        orderstream = env.addSource(consumerEntry2.getValue())
@@ -125,16 +127,16 @@ public class FlinkJoin {
 //                .uid(READ_KAFKA_TOPIC2)
 //                .name(READ_KAFKA_TOPIC2);
 
-        Long delay = 1000L;
 
-        ratestream = env.addSource(consumerEntry2.getValue())
-                .assignTimestampsAndWatermarks(new BoundedOutOfOrdernessTimestampExtractor<Tuple3<Long, String, Integer>>(Time.milliseconds(delay)) {
-                    @Override
-                    public long extractTimestamp(Tuple3<Long, String, Integer> element) {
-                        return element.getField(0);
-                    }
-                })
-                .keyBy(1);
+
+//        ratestream = env.addSource(consumerEntry2.getValue())
+//                .assignTimestampsAndWatermarks(new BoundedOutOfOrdernessTimestampExtractor<Tuple3<Long, String, Integer>>(Time.milliseconds(delay)) {
+//                    @Override
+//                    public long extractTimestamp(Tuple3<Long, String, Integer> element) {
+//                        return element.getField(0);
+//                    }
+//                })
+//                .keyBy(1);
 
         AllWindowedStream<Tuple3<Long, String, Integer>, TimeWindow> windows = ratestream.windowAll(TumblingEventTimeWindows.of(Time.seconds(30)));
 
