@@ -175,7 +175,7 @@ public class FlinkJoin {
                     @Override
                     public void open(Configuration parameters) throws Exception {
                         set = new CopyOnWriteArraySet<>();
-                        System.out.println("creat set");
+                        System.out.println("--------------creat/reset set");
                     }
 
                     @Override
@@ -194,8 +194,7 @@ public class FlinkJoin {
                             }
                         }
                     }
-                })
-                .setParallelism(10);
+                });
 
 //        KeyedStream<Tuple3<Long,String,Integer>, Tuple> keyedstream = ratestream.keyBy(0,1);
 
