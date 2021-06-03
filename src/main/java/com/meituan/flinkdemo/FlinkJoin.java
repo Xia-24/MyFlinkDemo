@@ -279,8 +279,7 @@ public class FlinkJoin {
         for(Map.Entry<KafkaTopic,FlinkKafkaProducer010> entry:topic2producers.entrySet()){
             newstream.addSink(entry.getValue())
                     .setParallelism(entry.getKey().getParallelism())
-                    .uid(WRITE_KAFKA_TOPIC).name(WRITE_KAFKA_TOPIC)
-            .setParallelism(10);
+                    .uid(WRITE_KAFKA_TOPIC).name(WRITE_KAFKA_TOPIC);
         }
 
         env.execute((new JobConf(args)).getJobName());
