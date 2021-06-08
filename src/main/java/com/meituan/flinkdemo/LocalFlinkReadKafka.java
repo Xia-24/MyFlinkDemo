@@ -75,12 +75,11 @@ public class LocalFlinkReadKafka {
 
             @Override
             public TypeInformation getProducedType() {
-                return TypeInformation.of(new TypeHint<Tuple3<Long, String, Integer>>() {
-                });
+                return null;
             }
         },props);
 
-        DataStream<Tuple3<Long, String, Integer>> ratestream =  null;
+        DataStream<Rate> ratestream =  null;
         Long delay = 1000L;
 
 
@@ -88,21 +87,21 @@ public class LocalFlinkReadKafka {
         ratestream = env.addSource(consumer);
 
         // Filter
-        SingleOutputStreamOperator<Tuple3<Long,String,Integer>> res = ratestream
-                .assignTimestampsAndWatermarks(new BoundedOutOfOrdernessTimestampExtractor<Tuple3<Long, String, Integer>>(Time.milliseconds(delay)) {
+        SingleOutputStreamOperator<Rate> res = ratestream
+                .assignTimestampsAndWatermarks(new BoundedOutOfOrdernessTimestampExtractor<Rate>(Time.milliseconds(delay)) {
             @Override
-            public long extractTimestamp(Tuple3<Long, String, Integer> element) {
-                return element.getField(0);
+            public long extractTimestamp(Rate rate) {
+                return rate.getTimestamp();
             }
         });
 
-        WindowedStream<Tuple3<Long,String,Integer>,Tuple,TimeWindow> windows = res.keyBy(0,1)
+        WindowedStream<Rate,Tuple,TimeWindow> windows = res.keyBy("source_id","code")
                 .window(TumblingEventTimeWindows.of(Time.seconds(30)));
 
         SingleOutputStreamOperator<Tuple3<Long,String,Integer>> processDS = windows
-                .trigger(new Trigger<Tuple3<Long, String, Integer>, TimeWindow>() {
+                .trigger(new Trigger<Rate, TimeWindow>() {
                     @Override
-                    public TriggerResult onElement(Tuple3<Long, String, Integer> element, long timestamp, TimeWindow window, TriggerContext ctx) throws Exception {
+                    public TriggerResult onElement(Rate element, long timestamp, TimeWindow window, TriggerContext ctx) throws Exception {
                         return TriggerResult.FIRE_AND_PURGE;
                     }
 
@@ -122,7 +121,7 @@ public class LocalFlinkReadKafka {
                     }
                 })
 
-                .process(new ProcessWindowFunction<Tuple3<Long, String, Integer>, Tuple3<Long, String, Integer>, Tuple, TimeWindow> ()  {
+                .process(new ProcessWindowFunction<Rate, Tuple3<Long, String, Integer>, Tuple, TimeWindow> ()  {
 //                    private Jedis jedis;
                     private MyBloomFilter mybloomFilter;
                     private  SquirrelConfig squirrelConfig = new SquirrelConfig();
@@ -148,14 +147,18 @@ public class LocalFlinkReadKafka {
                     }
 
                     @Override
-                    public void process(Tuple tuple, Context context, Iterable<Tuple3<Long, String, Integer>> elements, Collector<Tuple3<Long, String, Integer>> out) throws Exception {
+                    public void process(Tuple tuple, Context context, Iterable<Rate> elements, Collector<Tuple3<Long, String, Integer>> out) throws Exception {
                         String windowEnd = new Timestamp(context.window().getEnd()).toString();
                         String bitMapKey = "BitMap_" + windowEnd;
                         StoreKey storeKey = new StoreKey("stage_drone", bitMapKey);
-                        Tuple3 tp3 = elements.iterator().next();
-                        Long timestamp = (Long) tp3.f0;
-                        String hbdm = tp3.f1.toString();
-                        Integer num = (Integer) tp3.f2;
+//                        Tuple3 tp3 = elements.iterator().next();
+                        Rate rate = elements.iterator().next();
+//                        Long timestamp = (Long) tp3.f0;
+//                        String hbdm = tp3.f1.toString();
+//                        Integer num = (Integer) tp3.f2;
+                        Long timestamp = rate.getTimestamp();
+                        String hbdm = rate.getHbdm();
+                        Integer num = rate.getNum();
                         String str = Long.toString(timestamp/1000) + hbdm;
                         long offset = mybloomFilter.getOffset(str);
 //                        Boolean exists = jedis.getbit(bitMapKey,offset);
