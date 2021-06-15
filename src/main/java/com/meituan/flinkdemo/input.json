@@ -1,0 +1,10 @@
+{
+  "time": "2021-06-10 15:33:05",
+  "timestamp": 1623310385000,
+  "severity_level": 3,
+  "source_type": 2,
+  "source_id": "1422119031902",
+  "category": "",
+  "content": "[mqtt_agent_11050]: uav status nav_state:arm_state:link_prio->2:1:0",
+  "code": "548111623888"
+}

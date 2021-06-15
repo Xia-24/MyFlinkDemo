@@ -13,7 +13,7 @@
 //    public static void main(String[] args) {
 //        StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 //        env.setParallelism(1);
-//        DataStream<String> lineDS = env.readTextFile("input.txt");
+//        DataStream<String> lineDS = env.readTextFile("input.json");
 //        SingleOutputStreamOperator<String> wordDS = lineDS.flatMap(new FlatMapFunction<String, String>() {
 //            @Override
 //            public void flatMap(String s, Collector<String> collector) throws Exception {
