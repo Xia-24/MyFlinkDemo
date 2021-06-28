@@ -3,6 +3,7 @@ package com.meituan.flinkdemo.Table;
 import com.alibaba.fastjson.JSONObject;
 import com.meituan.flinkdemo.Entity.Rate;
 import org.apache.flink.api.common.functions.MapFunction;
+import org.apache.flink.api.common.serialization.SerializationSchema;
 import org.apache.flink.api.common.serialization.SimpleStringSchema;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple3;
@@ -15,6 +16,7 @@ import org.apache.flink.table.api.Table;
 import org.apache.flink.table.api.java.StreamTableEnvironment;
 import org.apache.flink.types.Row;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Properties;
 
 public class LocaltoRetractStream {
@@ -81,13 +83,19 @@ public class LocaltoRetractStream {
 //                return value.toString();
 //            }
 //        });
-        DataStream<String> sinkStream = rowStream.map(new MapFunction<Tuple2<Boolean, Row>, String>() {
+        rowStream.addSink(new FlinkKafkaProducer<Tuple2<Boolean, Row>>("sink", new SerializationSchema<Tuple2<Boolean, Row>>() {
             @Override
-            public String map(Tuple2<Boolean, Row> value) throws Exception {
-                return value.f1.toString();
+            public byte[] serialize(Tuple2<Boolean, Row> element) {
+                return (element.f0.toString() + "," + element.f1.toString()).getBytes(StandardCharsets.UTF_8);
             }
-        });
-        sinkStream.addSink(producer);
+        },prop2));
+//        DataStream<String> sinkStream = rowStream.map(new MapFunction<Tuple2<Boolean, Row>, String>() {
+//            @Override
+//            public String map(Tuple2<Boolean, Row> value) throws Exception {
+//                return value.f1.toString();
+//            }
+//        });
+//        sinkStream.addSink(producer);
         env.execute("");
 
     }
