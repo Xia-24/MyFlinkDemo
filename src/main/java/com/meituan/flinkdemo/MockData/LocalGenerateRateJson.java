@@ -14,7 +14,11 @@ import java.util.Properties;
 import java.util.Random;
 
 public class LocalGenerateRateJson {
-    public static final String[] HBDM = {"BEF","CNY","DEM","EUR","HKD","USD","ITL"};
+//    public static final String[] HBDM = {"BEF","CNY","DEM","EUR","HKD","USD","ITL"};
+    public static final String[] HBDM = {"BEF"};
+
+    public static final int numOfHBDM = 1;
+
     private static final String WRITE_KAFKA_TOPIC = "app.flinkrate";
     private static final Logger LOG = LoggerFactory.getLogger(LocalGenerateRateJson.class);
 
@@ -54,7 +58,7 @@ public class LocalGenerateRateJson {
                     }
                     else{
                         cnt = 0;
-                        hbdmindex = (hbdmindex + 1)%7;
+                        hbdmindex = (hbdmindex + 1)%numOfHBDM;
                         num = (num + 1) % 10;
                         Rate rate = new Rate(System.currentTimeMillis(),HBDM[hbdmindex],num);
                         sourceContext.collect(JSON.toJSONString(rate));
