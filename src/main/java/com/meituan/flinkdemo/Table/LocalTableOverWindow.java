@@ -2,9 +2,8 @@ package com.meituan.flinkdemo.Table;
 
 import com.alibaba.fastjson.JSONObject;
 import com.meituan.flinkdemo.Entity.Rate;
+import com.meituan.flinkdemo.Utils.SetKafkaConsumer;
 import org.apache.flink.api.common.functions.MapFunction;
-import org.apache.flink.api.common.serialization.SerializationSchema;
-import org.apache.flink.api.common.serialization.SimpleStringSchema;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.streaming.api.TimeCharacteristic;
@@ -24,8 +23,10 @@ import javax.annotation.Nullable;
 import java.nio.charset.StandardCharsets;
 import java.util.Properties;
 
-public class LocalTableWindow {
-    private static final String SINK_TOPIC ="sink";
+/**
+ * @author hujian
+ */
+public class LocalTableOverWindow {
     public static void main(String[] args) throws Exception {
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
         env.enableCheckpointing(1000L);
@@ -36,17 +37,10 @@ public class LocalTableWindow {
                 .build();
         StreamTableEnvironment tableEnvironment = StreamTableEnvironment.create(env, environmentSettings);
 
-        Properties props = new Properties();
-        props.put("bootstrap.servers", "localhost:9092");
-        props.put("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
-        props.put("value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
-        props.put("group.id", "group1");
-        props.put("auto.offset.reset", "latest");
         Properties prop2 = new Properties();
         prop2.put("bootstrap.servers", "localhost:9092");
-        prop2.setProperty("transaction.timeout.ms",1000*60*15+"");
 
-        FlinkKafkaConsumer consumer = new FlinkKafkaConsumer("test", new SimpleStringSchema(), props);
+        FlinkKafkaConsumer consumer = SetKafkaConsumer.getKafkaConsumer();
         DataStream<String> stream = env.addSource(consumer);
         DataStream<Tuple3<Long, String, Integer>> tupleStream = stream
                 .map(new MapFunction<String, Tuple3<Long, String, Integer>>() {
@@ -65,46 +59,35 @@ public class LocalTableWindow {
                 });
         // proctime 处理时间 rawtime 事件时间
         Table table = tableEnvironment
-                .fromDataStream(tupleStream,"f0,f1,f2, pt.proctime")
+                .fromDataStream(tupleStream, "f0,f1,f2, pt.proctime")
                 .renameColumns("f0 as ts,f1 as hbdm, f2 as num");
 
         table.printSchema();
 
         Table windowTable = table
-                .window(Tumble.over("1.seconds").on("pt").as("window"))
-                .groupBy("hbdm,window")
-                .select("hbdm,sum(num),min(ts),max(ts)");
+                .window(Over
+                        .partitionBy("hbdm")
+                        .orderBy("pt")
+//                        .preceding("UNBOUNDED_RANGE")
+//                        .preceding("10.seconds")
+                        .preceding("10.rows")
+//                        .following("CURRENT_RANGE")
+                        .as("w"))
+                .select("hbdm, num.sum over w");
 
 
-//        Table table = tableEnvironment
-////                .fromDataStream(tupleStream,"f0,f1,f2,pt.proctime")
-//                .fromDataStream(tupleStream,"f0.rowtime as ts,f1,f2")
-//                .renameColumns("f1 as hbdm, f2 as num");
-//
-//        table.printSchema();
-//
-//        Table windowTable = table
-//                .window(Tumble.over("1.seconds").on("ts").as("Window"))
-//                .groupBy("hbdm,Window")
-//                .select("hbdm,sum(num),min(ts),max(ts)");
-
-
-
-        DataStream<Tuple2<Boolean,Row>> resultStream = tableEnvironment.toRetractStream(windowTable, org.apache.flink.types.Row.class);
-//        resultStream.addSink(new FlinkKafkaProducer<Tuple2<Boolean, Row>>("sink", new SerializationSchema<Tuple2<Boolean, Row>>() {
-//            @Override
-//            public byte[] serialize(Tuple2<Boolean, Row> element) {
-//                return (element.f0.toString() + "," + element.f1.toString()).getBytes(StandardCharsets.UTF_8);
-//            }
-//        },prop2));
-
-        resultStream.addSink(new FlinkKafkaProducer<>(SINK_TOPIC,
+        DataStream<Tuple2<Boolean, Row>> resultStream = tableEnvironment.toRetractStream(windowTable, org.apache.flink.types.Row.class);
+        resultStream.addSink(new FlinkKafkaProducer<>("sink",
+//                new SerializationSchema<Tuple2<Boolean, Row>>() {
+//                    @Override
+//                    public byte[] serialize(Tuple2<Boolean, Row> element) {
+//                        return (element.f0.toString() + "," + element.f1.toString()).getBytes(StandardCharsets.UTF_8);
+//                    }
+//                },
                 new KafkaSerializationSchema<Tuple2<Boolean,Row>>(){
                     @Override
                     public ProducerRecord<byte[], byte[]> serialize(Tuple2<Boolean, Row> booleanRowTuple2, @Nullable Long aLong) {
-                        System.out.println("===============");
-                        System.out.println(booleanRowTuple2.toString());
-                        return new ProducerRecord<>(SINK_TOPIC,(booleanRowTuple2.f0.toString() + booleanRowTuple2.f1.toString()).getBytes(StandardCharsets.UTF_8));
+                        return new ProducerRecord<>("sink",(booleanRowTuple2.f0.toString() + booleanRowTuple2.f1.toString()).getBytes(StandardCharsets.UTF_8));
                     }
                 },
                 prop2,
@@ -114,4 +97,3 @@ public class LocalTableWindow {
         env.execute("");
     }
 }
-

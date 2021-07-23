@@ -14,10 +14,10 @@ import java.util.Properties;
 import java.util.Random;
 
 public class LocalGenerateRateJson {
-//    public static final String[] HBDM = {"BEF","CNY","DEM","EUR","HKD","USD","ITL"};
-    public static final String[] HBDM = {"BEF"};
+    public static final String[] HBDM = {"BEF","CNY","DEM","EUR","HKD","USD","ITL"};
+//    public static final String[] HBDM = {"BEF"};
 
-    public static final int numOfHBDM = 1;
+    public static final int numOfHBDM = 7;
 
     private static final String WRITE_KAFKA_TOPIC = "app.flinkrate";
     private static final Logger LOG = LoggerFactory.getLogger(LocalGenerateRateJson.class);
